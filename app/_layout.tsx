@@ -2,12 +2,12 @@ import Colors from "@/constants/Colors";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useFonts } from "expo-font";
-import { Link, Stack, useRouter } from "expo-router";
+import { isLoading, useFonts } from "expo-font";
+import { Link, Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SecureStore from "expo-secure-store";
 
@@ -58,16 +58,11 @@ const InitialLayout = () => {
   });
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
+  const segments = useSegments();
 
   useEffect(() => {
     if (error) throw error;
   }, [error]);
-
-  useEffect(() => {
-    if (isLoaded) {
-      console.log(isSignedIn, "SIGN IN STATUS");
-    }
-  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
     if (loaded) {
@@ -75,8 +70,24 @@ const InitialLayout = () => {
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
+  //Post Sign-in/Authentication UseEffect
+  useEffect(() => {
+    if (isLoaded) {
+      console.log(isSignedIn, "SIGN IN STATUS");
+      if (!isLoaded) return;
+      console.log(segments, "Checking useSegment");
+      const inAuthGroup = segments[0] === "(authenticated)";
+      if (isSignedIn && !inAuthGroup) {
+        router.replace("/(authenticated)/(tabs)/home");
+      } else if (!isSignedIn) {
+        router.replace("/");
+      }
+    }
+  }, [isLoaded, isSignedIn]);
+
+  if (!loaded || !isLoading) {
+    //Can use loading spinner instead
+    return <Text>Loading...</Text>;
   }
 
   return (
@@ -152,6 +163,10 @@ const InitialLayout = () => {
             </TouchableOpacity>
           ),
         }}
+      />
+      <Stack.Screen
+        name="(authenticated)/(tabs)"
+        options={{ headerShown: false }}
       />
     </Stack>
   );
